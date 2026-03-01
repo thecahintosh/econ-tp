@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser, isAdmin } from '@/lib/session'
 import { NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const user = await getCurrentUser()
