@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  passwordHash  String
+  role          String        @default("MEMBER") // MEMBER, CORE, EB, ADMIN
+  approved      Boolean       @default(true)      // ← NEW: false for EB/CORE until admin approves
+  proposals     Proposal[]    @relation("SubmittedBy")
+  assignedLeads Proposal[]    @relation("AssignedLead")
+  decisions     DecisionLog[]
+  createdAt     DateTime      @default(now())
+}
+
+model Proposal {
+  id                 String        @id @default(cuid())
+  title              String
+  description        String
+  status             String        @default("UNDER_REVIEW")
+  budget             Float?
+  expectedCompletion DateTime?
+  decisionSummary    String?
+  submittedById      String
+  submittedBy        User          @relation("SubmittedBy", fields: [submittedById], references: [id])
+  assignedLeadId     String?
+  assignedLead       User?         @relation("AssignedLead", fields: [assignedLeadId], references: [id])
+  milestones         Milestone[]
+  decisions          DecisionLog[]
+  event              Event?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model Milestone {
+  id         String   @id @default(cuid())
+  title      String
+  completed  Boolean  @default(false)
+  dueDate    DateTime?
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+model DecisionLog {
+  id         String   @id @default(cuid())
+  action     String
+  note       String?
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  madeById   String
+  madeBy     User     @relation(fields: [madeById], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Event {
+  id             String   @id @default(cuid())
+  proposalId     String   @unique
+  proposal       Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  attendance     Int?
+  budgetSpent    Float?
+  insights       String?
+  learnings      String?
+  feedbackRating Float?
+  photos         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
